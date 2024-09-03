@@ -6,105 +6,100 @@ const public_users = express.Router();
 
 const doesExist = (username) => {
     return users.some((user) => user.username === username);
-  };
-  
-public_users.post("/register", (req,res) => {
-  //Write your code here
-  const { username, password } = req.body;
-    // Check if both username and password are provided
+};
+
+// Register a new user
+public_users.post("/register", (req, res) => {
+    const { username, password } = req.body;
     if (username && password) {
-        // Check if the user does not already exist
         if (!doesExist(username)) {
-            // Add the new user to the users array
             users.push({"username": username, "password": password});
             return res.status(200).json({message: "User successfully registered. Now you can login"});
         } else {
             return res.status(404).json({message: "User already exists!"});
         }
     }
-    // Return error if username or password is missing
     return res.status(404).json({message: "Unable to register user."});
 });
 
 // Get the book list available in the shop
 public_users.get('/',function (req, res) {
-  //Write your code here
-  res.send(JSON.stringify(books,null,4));
+  res.send(JSON.stringify(books, null, 4));
 });
 
 // Get book details based on ISBN
-public_users.get('/isbn/:isbn',function (req, res) {
-  //Write your code here
-   const isbn = req.params.isbn;
-   // Find the book with the matching ISBN
-  let foundBook = null;
-  for (const key in books) {
-    if (books[key].isbn === isbn) {
-      foundBook = books[key];
-      break; // Exit the loop once the book is found
+public_users.get('/isbn/:isbn', function (req, res) {
+    const isbn = req.params.isbn;
+    const foundBook = Object.values(books).find(book => book.isbn === isbn);
+    if (foundBook) {
+        res.status(200).send(foundBook);
+    } else {
+        res.status(404).send({ message: 'Book not found' });
     }
-  }
+});
 
-  if (foundBook) {
-    res.status(200).send(foundBook);
-  } else {
-    res.status(404).send({ message: 'Book not found' });
-  }
- });
-  
 // Get book details based on author
-public_users.get('/author/:author',function (req, res) {
-  //Write your code here
-  const author = req.params.author;
-  let booksByAuthor = [];
-  for (const key in books) {
-    if (books[key].author === author) {
-      booksByAuthor.push(books[key]);
+public_users.get('/author/:author', function (req, res) {
+    const author = req.params.author;
+    const booksByAuthor = Object.values(books).filter(book => book.author === author);
+    if (booksByAuthor.length > 0) {
+        res.status(200).send(booksByAuthor);
+    } else {
+        res.status(404).send({ message: 'No books found by this author' });
     }
-  }
-
-  if (booksByAuthor.length > 0) {
-    res.status(200).send(booksByAuthor);
-  } else {
-    res.status(404).send({ message: 'No books found by this author' });
-  }
 });
 
 // Get all books based on title
-public_users.get('/title/:title',function (req, res) {
-  //Write your code here
-  const title = req.params.title;
-  let booksByTitle = [];
-  for (const key in books) {
-    if (books[key].title === title) {
-      booksByTitle.push(books[key]);
+public_users.get('/title/:title', function (req, res) {
+    const title = req.params.title;
+    const booksByTitle = Object.values(books).filter(book => book.title === title);
+    if (booksByTitle.length > 0) {
+        res.status(200).send(booksByTitle);
+    } else {
+        res.status(404).send({ message: 'No books found with this title' });
     }
-  }
-
-  if (booksByTitle.length > 0) {
-    res.status(200).send(booksByTitle);
-  } else {
-    res.status(404).send({ message: 'No books found with this title' });
-  }
 });
 
-//  Get book review
-public_users.get('/review/:isbn',function (req, res) {
-  //Write your code here
-  const isbn = req.params.isbn;
-  let foundBook = null;
-  for (const key in books) {
-    if (books[key].isbn === isbn) {
-      foundBook = books[key];
-      break; // Exit the loop once the book is found
+// Get book review
+public_users.get('/review/:isbn', function (req, res) {
+    const isbn = req.params.isbn;
+    const foundBook = Object.values(books).find(book => book.isbn === isbn);
+    if (foundBook) {
+        res.status(200).send(foundBook.reviews);
+    } else {
+        res.status(404).send({ message: 'Book not found' });
     }
-  }
+});
 
-  if (foundBook) {
-    res.status(200).send(foundBook.reviews);
-  } else {
-    res.status(404).send({ message: 'Book not found' });
-  }
+// Add or modify a book review
+public_users.post('/review/:isbn', function (req, res) {
+    const isbn = req.params.isbn;
+    const review = req.query.review;
+    const username = req.session.username; // Assuming the username is stored in the session
+
+    // Check if the user is logged in
+    if (!username) {
+        return res.status(401).json({ message: 'You need to be logged in to post a review.' });
+    }
+
+    // Find the book by ISBN
+    const foundBook = Object.values(books).find(book => book.isbn === isbn);
+
+    if (foundBook) {
+        // Check if the user has already posted a review for this book
+        if (foundBook.reviews[username]) {
+            // Update the existing review
+            foundBook.reviews[username] = review;
+            return res.status(200).json({ message: 'Review updated successfully.' });
+        } else {
+            // Add a new review
+            foundBook.reviews[username] = review;
+            return res.status(200).json({ message: 'Review added successfully.' });
+        }
+    } else {
+        return res.status(404).json({ message: 'Book not found' });
+    }
 });
 
 module.exports.general = public_users;
+
