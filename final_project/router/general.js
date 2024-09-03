@@ -25,7 +25,6 @@ public_users.post("/register", (req, res) => {
 // Get the book list available in the shop using Async-Await
 public_users.get('/', async function (req, res) {
     try {
-        // Simulate an API call to fetch books (using the in-memory 'books' object)
         const booksList = await axios.get('http://localhost:5000/booksdb');
         res.status(200).json(booksList.data);
     } catch (error) {
@@ -38,8 +37,19 @@ public_users.get('/booksdb', function (req, res) {
     res.status(200).json(books);
 });
 
-// Get book details based on ISBN
-public_users.get('/isbn/:isbn', function (req, res) {
+// Get book details based on ISBN using Async-Await
+public_users.get('/isbn/:isbn', async function (req, res) {
+    const isbn = req.params.isbn;
+    try {
+        const foundBook = await axios.get(`http://localhost:5000/booksdb/${isbn}`);
+        res.status(200).json(foundBook.data);
+    } catch (error) {
+        res.status(404).json({ message: 'Book not found', error });
+    }
+});
+
+// Endpoint to serve book details based on ISBN
+public_users.get('/booksdb/:isbn', function (req, res) {
     const isbn = req.params.isbn;
     const foundBook = Object.values(books).find(book => book.isbn === isbn);
 
@@ -50,8 +60,19 @@ public_users.get('/isbn/:isbn', function (req, res) {
     }
 });
 
-// Get book details based on author
-public_users.get('/author/:author', function (req, res) {
+// Get book details based on author using Async-Await
+public_users.get('/author/:author', async function (req, res) {
+    const author = req.params.author;
+    try {
+        const booksByAuthor = await axios.get(`http://localhost:5000/booksdb/author/${author}`);
+        res.status(200).json(booksByAuthor.data);
+    } catch (error) {
+        res.status(404).json({ message: 'No books found by this author', error });
+    }
+});
+
+// Endpoint to serve book details based on author
+public_users.get('/booksdb/author/:author', function (req, res) {
     const author = req.params.author;
     const booksByAuthor = Object.values(books).filter(book => book.author === author);
 
@@ -62,8 +83,19 @@ public_users.get('/author/:author', function (req, res) {
     }
 });
 
-// Get all books based on title
-public_users.get('/title/:title', function (req, res) {
+// Get book details based on title using Async-Await
+public_users.get('/title/:title', async function (req, res) {
+    const title = req.params.title;
+    try {
+        const booksByTitle = await axios.get(`http://localhost:5000/booksdb/title/${title}`);
+        res.status(200).json(booksByTitle.data);
+    } catch (error) {
+        res.status(404).json({ message: 'No books found with this title', error });
+    }
+});
+
+// Endpoint to serve book details based on title
+public_users.get('/booksdb/title/:title', function (req, res) {
     const title = req.params.title;
     const booksByTitle = Object.values(books).filter(book => book.title === title);
 
